@@ -67,6 +67,7 @@ pub fn render(frame: &mut Frame, app: &App) {
             render_config(frame, app);
         }
         Screen::Installing => render_installing(frame, app),
+        Screen::Auth => render_auth(frame, app),
         Screen::GameRunning => {}
     }
 }
@@ -97,11 +98,17 @@ fn footer() -> Paragraph<'static> {
         Span::styled(" Ctrl+V ", Style::new().fg(PRIMARY_LIGHT).add_modifier(Modifier::BOLD)),
         Span::styled("Snapshots", dim_style()),
         Span::styled("  │  ", muted_style()),
+        Span::styled(" Ctrl+M ", Style::new().fg(PRIMARY_LIGHT).add_modifier(Modifier::BOLD)),
+        Span::styled("Online", dim_style()),
+        Span::styled("  │  ", muted_style()),
         Span::styled(" Ctrl+P ", Style::new().fg(PRIMARY_LIGHT).add_modifier(Modifier::BOLD)),
         Span::styled("Config", dim_style()),
         Span::styled("  │  ", muted_style()),
         Span::styled(" Enter ", Style::new().fg(SUCCESS).add_modifier(Modifier::BOLD)),
         Span::styled("Launch", dim_style()),
+        Span::styled("  │  ", muted_style()),
+        Span::styled(" O ", Style::new().fg(ACCENT).add_modifier(Modifier::BOLD)),
+        Span::styled("Offline", dim_style()),
         Span::styled("  │  ", muted_style()),
         Span::styled(" Q ", Style::new().fg(ERROR).add_modifier(Modifier::BOLD)),
         Span::styled("Quit", dim_style()),
@@ -225,7 +232,7 @@ fn render_info_panel(frame: &mut Frame, app: &App, area: Rect) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(7),
+            Constraint::Length(9),
             Constraint::Length(11),
             Constraint::Length(3),
         ])
@@ -237,12 +244,24 @@ fn render_info_panel(frame: &mut Frame, app: &App, area: Rect) {
         app.config.username.clone()
     };
 
+    let auth_mode = if app.config.online_mode {
+        (SUCCESS, "Online (Microsoft)")
+    } else {
+        (ACCENT, "Offline")
+    };
+
     let player_info = Paragraph::new(vec![
         Line::from(vec![
             Span::styled("  ", text_style()),
             Span::styled("Username", Style::new().fg(PRIMARY_LIGHT).add_modifier(Modifier::BOLD)),
             Span::styled("  ", text_style()),
             Span::styled(&username, text_style()),
+        ]),
+        Line::from(vec![
+            Span::styled("  ", text_style()),
+            Span::styled("Mode", Style::new().fg(PRIMARY_LIGHT).add_modifier(Modifier::BOLD)),
+            Span::styled("      ", text_style()),
+            Span::styled(auth_mode.1, Style::new().fg(auth_mode.0)),
         ]),
         Line::from(""),
         Line::from(vec![
@@ -569,4 +588,97 @@ fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
             Constraint::Percentage((100 - percent_x) / 2),
         ])
         .split(popup[1])[1]
+}
+
+fn render_auth(frame: &mut Frame, app: &App) {
+    let area = frame.area();
+
+    let layout = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Length(3), Constraint::Min(1), Constraint::Length(3)])
+        .split(area);
+
+    frame.render_widget(header(), layout[0]);
+    frame.render_widget(footer_auth(), layout[2]);
+
+    let center = centered_rect(60, 50, layout[1]);
+
+    let inner = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Length(2),
+            Constraint::Length(1),
+            Constraint::Length(3),
+            Constraint::Length(3),
+            Constraint::Length(1),
+            Constraint::Length(1),
+        ])
+        .split(center);
+
+    let title = Paragraph::new(Line::from(vec![
+        Span::styled("Microsoft Login", title_style()),
+    ]))
+    .alignment(Alignment::Center);
+    frame.render_widget(title, inner[0]);
+
+    let status = Paragraph::new(Line::from(vec![
+        Span::styled("  ", text_style()),
+        Span::styled(&app.auth_status, dim_style()),
+    ]))
+    .alignment(Alignment::Center);
+    frame.render_widget(status, inner[1]);
+
+    if let (Some(code), Some(url)) = (&app.auth_code, &app.auth_url) {
+        let code_block = Block::default()
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(border_style_active())
+            .style(Style::new().bg(BG));
+        let code_text = Paragraph::new(vec![
+            Line::from(vec![
+                Span::styled("Code: ", Style::new().fg(PRIMARY_LIGHT).add_modifier(Modifier::BOLD)),
+                Span::styled(code, Style::new().fg(FG).add_modifier(Modifier::BOLD)),
+            ]),
+        ])
+        .alignment(Alignment::Center)
+        .block(code_block);
+        frame.render_widget(code_text, inner[2]);
+
+        let url_block = Block::default()
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(border_style_active())
+            .style(Style::new().bg(BG));
+        let url_text = Paragraph::new(vec![
+            Line::from(vec![Span::styled("Open in browser:", dim_style())]),
+            Line::from(vec![Span::styled(url, Style::new().fg(ACCENT_LIGHT))]),
+        ])
+        .alignment(Alignment::Center)
+        .block(url_block);
+        frame.render_widget(url_text, inner[3]);
+    }
+
+    let esc_hint = Paragraph::new(Line::from(vec![
+        Span::styled("  Esc ", Style::new().fg(ERROR).add_modifier(Modifier::BOLD)),
+        Span::styled("Cancel", dim_style()),
+    ]))
+    .alignment(Alignment::Center);
+    frame.render_widget(esc_hint, inner[5]);
+}
+
+fn footer_auth() -> Paragraph<'static> {
+    let help = Line::from(vec![
+        Span::styled(" Esc ", Style::new().fg(ERROR).add_modifier(Modifier::BOLD)),
+        Span::styled("Cancel", dim_style()),
+    ]);
+    Paragraph::new(help)
+        .alignment(Alignment::Center)
+        .style(dim_style())
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .border_style(border_style())
+                .style(Style::new().bg(BG)),
+        )
 }

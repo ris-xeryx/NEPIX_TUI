@@ -43,6 +43,10 @@ pub struct Config {
     pub show_snapshots: bool,
     /// Lista de mods (slugs de Modrinth) que el usuario ha agregado.
     pub mods: Vec<String>,
+    /// Token de refresco de Microsoft para login automático.
+    pub msa_refresh_token: Option<String>,
+    /// Si es true, usa Microsoft auth. Si false, va offline directo.
+    pub online_mode: bool,
 }
 
 impl Default for Config {
@@ -57,6 +61,8 @@ impl Default for Config {
             last_loader: "Vanilla".into(),
             show_snapshots: false,
             mods: Vec::new(),
+            msa_refresh_token: None,
+            online_mode: false,
         }
     }
 }

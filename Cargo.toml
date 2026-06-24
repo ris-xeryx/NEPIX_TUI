@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 lighty-launcher = { version = "26.5.12", features = ["vanilla", "fabric", "quilt", "neoforge", "forge", "events", "modrinth"] }
+lighty-auth = "26.5.12"
 lighty-event = "26.5.12"
 ratatui = "0.30"
 crossterm = "0.28"

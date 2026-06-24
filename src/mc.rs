@@ -15,6 +15,8 @@
 
 use anyhow::Result;
 use lighty_launcher::prelude::*;
+use lighty_launcher::auth::SecretString;
+use lighty_auth::UserProfile;
 use serde::Deserialize;
 use tokio::sync::mpsc;
 
@@ -31,46 +33,16 @@ pub struct VersionEntry {
     pub version_type: String,
 }
 
-/// Eventos que el proceso de lanzamiento envía a la TUI.
-///
-/// Funciona como un "radio" entre el launcher y la interfaz:
-/// el módulo `mc.rs` transmite, la TUI recibe y actualiza la pantalla.
-///
-/// # Variantes
-/// - `Status`: mensaje de texto (ej: "Descargando...")
-/// - `Progress`: bytes descargados vs total
-/// - `Launched`: el juego arrancó correctamente
-/// - `ProcessOutput`: una línea de la consola del juego
-/// - `ProcessExited`: el juego se cerró
-/// - `Error`: algo salió mal
-/// - `Done`: proceso terminado sin errores
+/// Eventos que el proceso de lanzamiento/envío a la TUI.
 #[derive(Debug)]
 #[allow(dead_code)]
 pub enum McEvent {
-    /// Mensaje de estado actual (ej: "Descargando assets...").
     Status(String),
-    /// Progreso de descarga en bytes.
-    Progress {
-        /// Bytes descargados en este paso.
-        current: u64,
-        /// Total de bytes a descargar (0 si se desconoce).
-        total: u64,
-    },
-    /// El juego se lanzó exitosamente. Incluye el PID del proceso.
-    Launched {
-        /// Process ID de Minecraft.
-        pid: u32,
-    },
-    /// Una línea de salida de la consola de Minecraft (stdout/stderr).
+    Progress { current: u64, total: u64 },
+    Launched { pid: u32 },
     ProcessOutput(String),
-    /// El proceso de Minecraft terminó.
-    ProcessExited {
-        /// Código de salida (0 = normal, otro = error).
-        exit_code: i32,
-    },
-    /// Error durante el proceso de lanzamiento.
+    ProcessExited { exit_code: i32 },
     Error(String),
-    /// Proceso completado (Minecraft cerró sin errores reportados).
     Done,
 }
 
@@ -88,7 +60,34 @@ struct ManifestVersion {
     version_type: String,
 }
 
-/// Obtiene la lista completa de versiones de Minecraft desde la API de Mojang.
+/// Cliente Azure AD de Nepix. Debes registrar tu propia app en Azure.
+const MSA_CLIENT_ID: &str = "00000000-0000-0000-0000-000000000000";
+
+/// Intenta autenticarse con Microsoft usando el flujo device-code.
+/// El callback recibe (codigo, url) para que la UI lo muestre al usuario.
+pub async fn authenticate_microsoft(
+    refresh_token: Option<&str>,
+    device_code_cb: impl Fn(&str, &str) + Send + Sync + 'static,
+) -> Result<UserProfile> {
+    let mut auth = MicrosoftAuth::new(MSA_CLIENT_ID);
+    auth.set_device_code_callback(device_code_cb);
+
+    if let Some(rt) = refresh_token {
+        let rt_secret = SecretString::from(rt.to_string());
+        match auth.authenticate_with_refresh_token(&rt_secret, None::<&EventBus>).await {
+            Ok(profile) => return Ok(profile),
+            Err(_) => {}
+        }
+    }
+
+    auth.authenticate(None::<&EventBus>).await.map_err(|e| anyhow::anyhow!("{e}"))
+}
+
+/// Autenticacion offline: solo necesita un nombre de usuario.
+pub async fn authenticate_offline(username: &str) -> Result<UserProfile> {
+    let mut auth = OfflineAuth::new(username);
+    auth.authenticate(None::<&EventBus>).await.map_err(|e| anyhow::anyhow!("{e}"))
+}
 ///
 /// Hace una petición HTTP GET a:
 /// `https://launchermeta.mojang.com/mc/game/version_manifest_v2.json`
@@ -254,7 +253,7 @@ async fn resolve_neoforge(mc_version: &str) -> Option<String> {
 /// - `mods`: slugs de Modrinth a instalar
 /// - `tx`: canal para enviar eventos de vuelta a la TUI
 pub async fn launch(
-    username: String,
+    profile: &UserProfile,
     version: String,
     loader_name: String,
     min_ram: String,
@@ -264,16 +263,6 @@ pub async fn launch(
     tx: mpsc::Sender<McEvent>,
 ) {
     let _ = tx.send(McEvent::Status("Initializing...".into())).await;
-
-    // Autenticación offline: no necesita Microsoft, solo un nombre
-    let mut auth = OfflineAuth::new(&username);
-    let profile = match auth.authenticate(None::<&EventBus>).await {
-        Ok(p) => p,
-        Err(e) => {
-            let _ = tx.send(McEvent::Error(format!("Auth failed: {e}"))).await;
-            return;
-        }
-    };
 
     let loader = parse_loader(&loader_name);
 

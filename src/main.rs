@@ -83,12 +83,11 @@ async fn run(
     app: &mut App,
 ) -> anyhow::Result<()> {
     loop {
-        // Procesa eventos de MC y dibuja el frame final si hay transición
+        // Procesa eventos de MC y auth
         while let Ok(event) = app.mc_rx.try_recv() {
             let was_installing = app.screen == Screen::Installing;
             app.handle_mc_event(event);
 
-            // Redibuja la barra de progreso en cada evento durante la instalación
             if app.screen == Screen::Installing {
                 app.advance_fake_progress();
                 let _ = terminal.draw(|frame| ui::render(frame, app));
@@ -105,14 +104,20 @@ async fn run(
                         *terminal = ratatui::init();
                         log::info("MAIN", "Back from wait_for_game, screen=Main");
                     }
-                    _ => {} // Main o Error: no necesita restore extra
+                    _ => {}
                 }
                 break;
             }
         }
 
-        // Si el juego ya está corriendo, entra al wait (cubre el caso
-        // en que GameRunning se setee fuera del while de arriba).
+        while let Ok(auth_event) = app.auth_rx.try_recv() {
+            app.handle_auth_event(auth_event);
+            if app.screen == Screen::Installing {
+                break;
+            }
+        }
+
+        // Si el juego ya está corriendo, entra al wait
         if app.screen == Screen::GameRunning {
             enter_game_running(terminal, app);
             wait_for_game(app).await;
@@ -122,10 +127,8 @@ async fn run(
             continue;
         }
 
-        // Dibuja la interfaz según el estado actual (Main, Config, Installing).
         if app.screen == Screen::Installing {
             app.advance_fake_progress();
-            log::info("DRAW", &format!("Installing status={} progress={:.3} current={} total={}", app.install_status, app.install_progress, app.install_current, app.install_total));
         }
         terminal.draw(|frame| ui::render(frame, app))?;
 

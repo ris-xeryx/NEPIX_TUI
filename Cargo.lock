@@ -1814,11 +1814,12 @@ dependencies = [
 
 [[package]]
 name = "nepix"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "crossterm 0.28.1",
  "directories",
+ "lighty-auth",
  "lighty-event",
  "lighty-launcher",
  "open",
