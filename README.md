@@ -1,18 +1,24 @@
 # Nepix
 
-Launcher de Minecraft para terminal. Rápido, ligero, sin GUI pesada.
+> Launcher de Minecraft para terminal. Rápido, ligero, sin GUI pesada.
 
-## Instalación
+---
+
+## 🚀 Instalación
+
+### Linux / macOS
 
 ```bash
 curl -fsSL https://github.com/ris-xeryx/NEPIX_TUI/releases/latest/download/install.sh | bash
 ```
 
-Windows (PowerShell):
+### Windows (PowerShell)
 
 ```powershell
 irm https://github.com/ris-xeryx/NEPIX_TUI/releases/latest/download/install.ps1 | iex
 ```
+
+---
 
 ## Uso
 
@@ -20,22 +26,43 @@ irm https://github.com/ris-xeryx/NEPIX_TUI/releases/latest/download/install.ps1 
 nepix
 ```
 
-- Flechas para navegar versiones
-- Enter para instalar y lanzar
-- Q para salir
+- `↑↓` o `jk` — Navegar versiones
+- `Enter` — Instalar y lanzar Minecraft
+- `q` — Salir
 
-## Requisitos
-
-- Java 17+ (para correr Minecraft)
-- Conexión a internet (descarga de versiones)
+---
 
 ## Compilar desde fuente
 
 ```bash
 git clone https://github.com/ris-xeryx/NEPIX_TUI
-cd nepix
+cd NEPIX_TUI
 cargo build --release
 ```
+
+---
+
+## Probado en
+
+| Componente | Detalle |
+|-----------|---------|
+| **SO** | Fedora Workstation 44 |
+| **Kernel** | 6.19.10-300.fc44.x86_64 |
+| **CPU** | Intel Core i3-4170 (4 núcleos) @ 3.70GHz |
+| **RAM** | 7.6 GiB |
+| **GPU** | Intel HD Graphics 4400 (integrada) |
+
+---
+
+## 🤝 Contribuir
+
+Este proyecto está abierto a sugerencias, ideas, reportes de bugs y pull requests.
+
+- **Issues:** [github.com/ris-xeryx/NEPIX_TUI/issues](https://github.com/ris-xeryx/NEPIX_TUI/issues)
+- **Discusiones:** Cualquier idea es bienvenida en la pestaña de Issues.
+- **PRs:** Haz fork, crea rama, envía PR. Sin formalismos.
+
+---
 
 ## Licencia
 
