@@ -66,4 +66,4 @@ Este proyecto está abierto a sugerencias, ideas, reportes de bugs y pull reques
 
 ## Licencia
 
-MIT
+[GNU General Public License v3.0](LICENSE)
