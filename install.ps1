@@ -2,7 +2,7 @@ param(
     [string]$Version = "latest"
 )
 
-$Repo = "ris-xeryx/nepix"
+$Repo = "ris-xeryx/NEPIX_TUI"
 $Bin = "nepix.exe"
 
 $Arch = if ([Environment]::Is64BitOperatingSystem) { "x86_64" } else { "i686" }

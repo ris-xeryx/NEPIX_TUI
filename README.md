@@ -5,13 +5,13 @@ Launcher de Minecraft para terminal. Rápido, ligero, sin GUI pesada.
 ## Instalación
 
 ```bash
-curl -fsSL https://github.com/ris-xeryx/nepix/releases/latest/download/install.sh | bash
+curl -fsSL https://github.com/ris-xeryx/NEPIX_TUI/releases/latest/download/install.sh | bash
 ```
 
 Windows (PowerShell):
 
 ```powershell
-irm https://github.com/ris-xeryx/nepix/releases/latest/download/install.ps1 | iex
+irm https://github.com/ris-xeryx/NEPIX_TUI/releases/latest/download/install.ps1 | iex
 ```
 
 ## Uso
@@ -32,7 +32,7 @@ nepix
 ## Compilar desde fuente
 
 ```bash
-git clone https://github.com/ris-xeryx/nepix
+git clone https://github.com/ris-xeryx/NEPIX_TUI
 cd nepix
 cargo build --release
 ```

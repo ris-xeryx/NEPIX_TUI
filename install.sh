@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-REPO="ris-xeryx/nepix"
+REPO="ris-xeryx/NEPIX_TUI"
 VERSION="${NEPIX_VERSION:-latest}"
 BIN="nepix"
 
