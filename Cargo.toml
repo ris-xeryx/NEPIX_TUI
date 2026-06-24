@@ -1,0 +1,17 @@
+[package]
+name = "nepix"
+version = "0.2.2"
+edition = "2021"
+
+[dependencies]
+lighty-launcher = { version = "26.5.12", features = ["vanilla", "fabric", "quilt", "neoforge", "forge", "events", "modrinth"] }
+lighty-event = "26.5.12"
+ratatui = "0.30"
+crossterm = "0.28"
+tokio = { version = "1", features = ["full"] }
+anyhow = "1"
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
+directories = "5"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+open = "5"

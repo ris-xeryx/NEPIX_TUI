@@ -1,0 +1,68 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-22.04
+            artifact_suffix: linux-x86_64
+          - target: x86_64-apple-darwin
+            os: macos-13
+            artifact_suffix: macos-x86_64
+          - target: aarch64-apple-darwin
+            os: macos-14
+            artifact_suffix: macos-aarch64
+          - target: x86_64-pc-windows-msvc
+            os: windows-2022
+            artifact_suffix: windows-x86_64.exe
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          target: ${{ matrix.target }}
+
+      - name: Build
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Rename binary
+        shell: bash
+        run: |
+          mkdir release
+          if [[ "${{ matrix.artifact_suffix }}" == *.exe ]]; then
+            cp target/${{ matrix.target }}/release/nepix.exe release/nepix-${{ matrix.artifact_suffix }}
+          else
+            cp target/${{ matrix.target }}/release/nepix release/nepix-${{ matrix.artifact_suffix }}
+          fi
+          cp install.sh release/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nepix-${{ matrix.artifact_suffix }}
+          path: release/
+
+  release:
+    needs: build
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
+          generate_release_notes: true
