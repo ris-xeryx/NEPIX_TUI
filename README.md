@@ -27,8 +27,13 @@ nepix
 ```
 
 - `↑↓` o `jk` — Navegar versiones
-- `Enter` — Instalar y lanzar Minecraft
+- `Enter` — Lanzar con Microsoft login (modo online)
+- `o` — Lanzar offline (sin auth)
+- `Ctrl+M` — Alternar online/offline
 - `q` — Salir
+
+> **Nota:** El modo online requiere aprobación de Mojang. Puede tardar semanas en activarse.
+> Mientras tanto, usa el modo offline con `o`.
 
 ---
 

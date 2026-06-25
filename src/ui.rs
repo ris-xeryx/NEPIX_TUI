@@ -11,7 +11,7 @@ use ratatui::{
 use crate::app::{App, Screen};
 use crate::mc;
 
-pub const VERSION: &str = "0.3";
+pub const VERSION: &str = "0.4";
 
 const PRIMARY: Color = Color::Rgb(139, 92, 246);
 const PRIMARY_LIGHT: Color = Color::Rgb(167, 139, 250);
