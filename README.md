@@ -15,6 +15,7 @@ curl -fsSL https://github.com/ris-xeryx/NEPIX_TUI/releases/latest/download/insta
 ### Windows (PowerShell)
 
 ```powershell
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 irm https://github.com/ris-xeryx/NEPIX_TUI/releases/latest/download/install.ps1 | iex
 ```
 
