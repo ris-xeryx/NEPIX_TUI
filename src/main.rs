@@ -39,7 +39,7 @@ mod mc;
 mod ui;
 
 use app::{App, Screen};
-use crossterm::event::{self, Event};
+use crossterm::event::{self, Event, KeyEventKind};
 use std::time::Duration;
 
 #[tokio::main]
@@ -136,7 +136,7 @@ async fn run(
         // respuesta al soltar una tecla es inmediata.
         if event::poll(Duration::from_millis(16))? {
             if let Event::Key(key) = event::read()? {
-                if app.handle_key(key) {
+                if key.kind == KeyEventKind::Press && app.handle_key(key) {
                     break;
                 }
             }
