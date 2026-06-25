@@ -47,6 +47,7 @@ jobs:
             cp target/${{ matrix.target }}/release/nepix release/nepix-${{ matrix.artifact_suffix }}
           fi
           cp install.sh release/
+          cp install.ps1 release/
 
       - uses: actions/upload-artifact@v4
         with:

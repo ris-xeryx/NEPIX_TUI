@@ -34,8 +34,12 @@ fi
 cp "$SRC" "$DST"
 echo "Creado: $DST"
 
-# También copia install.sh para subirlo al release
+# También copia install.sh e install.ps1 para subirlos al release
 if [ -f install.sh ]; then
     cp install.sh "$RELEASE_DIR/install.sh"
     echo "Creado: $RELEASE_DIR/install.sh"
+fi
+if [ -f install.ps1 ]; then
+    cp install.ps1 "$RELEASE_DIR/install.ps1"
+    echo "Creado: $RELEASE_DIR/install.ps1"
 fi
