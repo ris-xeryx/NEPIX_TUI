@@ -61,7 +61,7 @@ struct ManifestVersion {
 }
 
 /// Cliente Azure AD de Nepix. Debes registrar tu propia app en Azure.
-const MSA_CLIENT_ID: &str = "00000000-0000-0000-0000-000000000000";
+const MSA_CLIENT_ID: &str = "10615b54-2b15-4060-991e-b03675b82118";
 
 /// Intenta autenticarse con Microsoft usando el flujo device-code.
 /// El callback recibe (codigo, url) para que la UI lo muestre al usuario.
