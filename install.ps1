@@ -8,10 +8,11 @@ $Bin = "nepix.exe"
 $Arch = if ([Environment]::Is64BitOperatingSystem) { "x86_64" } else { "i686" }
 $OS = "windows"
 
+$Asset = "nepix-${OS}-${Arch}.exe"
 if ($Version -eq "latest") {
-    $Url = "https://github.com/${Repo}/releases/latest/download/${Bin}"
+    $Url = "https://github.com/${Repo}/releases/latest/download/${Asset}"
 } else {
-    $Url = "https://github.com/${Repo}/releases/download/${Version}/nepix-${OS}-${Arch}.exe"
+    $Url = "https://github.com/${Repo}/releases/download/${Version}/${Asset}"
 }
 
 $InstallDir = "$env:LOCALAPPDATA\nepix"
