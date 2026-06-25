@@ -14,6 +14,9 @@ struct Logger {
 }
 
 pub fn init(path: &std::path::Path) {
+    if let Some(parent) = path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
     let file = OpenOptions::new()
         .create(true)
         .append(true)
