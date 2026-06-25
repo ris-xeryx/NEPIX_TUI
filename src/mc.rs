@@ -60,8 +60,13 @@ struct ManifestVersion {
     version_type: String,
 }
 
-/// Cliente Azure AD de Nepix. Debes registrar tu propia app en Azure.
+/// Cliente Azure AD de Nepix.
+/// Se puede sobreescribir con la variable de entorno NEPIX_MSA_CLIENT_ID.
 const MSA_CLIENT_ID: &str = "10615b54-2b15-4060-991e-b03675b82118";
+
+fn msa_client_id() -> String {
+    std::env::var("NEPIX_MSA_CLIENT_ID").unwrap_or_else(|_| MSA_CLIENT_ID.into())
+}
 
 /// Intenta autenticarse con Microsoft usando el flujo device-code.
 /// El callback recibe (codigo, url) para que la UI lo muestre al usuario.
@@ -69,7 +74,7 @@ pub async fn authenticate_microsoft(
     refresh_token: Option<&str>,
     device_code_cb: impl Fn(&str, &str) + Send + Sync + 'static,
 ) -> Result<UserProfile> {
-    let mut auth = MicrosoftAuth::new(MSA_CLIENT_ID);
+    let mut auth = MicrosoftAuth::new(msa_client_id());
     auth.set_device_code_callback(device_code_cb);
 
     if let Some(rt) = refresh_token {
