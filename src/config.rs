@@ -47,6 +47,9 @@ pub struct Config {
     pub msa_refresh_token: Option<String>,
     /// Si es true, usa Microsoft auth. Si false, va offline directo.
     pub online_mode: bool,
+    /// Índice del tema de color activo (0 = Purple, 1 = Blue, ...).
+    #[serde(default)]
+    pub theme: usize,
 }
 
 impl Default for Config {
@@ -63,6 +66,7 @@ impl Default for Config {
             mods: Vec::new(),
             msa_refresh_token: None,
             online_mode: false,
+            theme: 0,
         }
     }
 }

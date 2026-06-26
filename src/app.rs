@@ -44,6 +44,8 @@ pub struct App {
     pub config_max_focus: usize,
     pub config_field_dirty: [bool; 6],
 
+    pub theme_idx: usize,
+
     pub install_status: String,
     pub install_progress: f64,
     pub install_total: u64,
@@ -81,6 +83,7 @@ impl App {
             .unwrap_or(0);
 
         let edit_mods = config.mods.clone();
+        let theme_idx = config.theme;
 
         Self {
             screen: Screen::Main,
@@ -98,6 +101,7 @@ impl App {
             config_focus: 0,
             config_max_focus: 6,
             config_field_dirty: [false; 6],
+            theme_idx,
             install_status: String::new(),
             install_progress: 0.0,
             install_current: 0,
@@ -119,6 +123,13 @@ impl App {
 
     pub fn clear_error(&mut self) {
         self.error_message = None;
+    }
+
+    pub fn cycle_theme(&mut self) {
+        let count = crate::ui::themes().len();
+        self.theme_idx = (self.theme_idx + 1) % count;
+        self.config.theme = self.theme_idx;
+        let _ = self.config.save();
     }
 
     pub fn filtered_versions(&self) -> Vec<&VersionEntry> {
@@ -220,6 +231,9 @@ impl App {
                 } else {
                     self.launch_minecraft();
                 }
+            }
+            KeyCode::Tab => {
+                self.cycle_theme();
             }
             KeyCode::Char('o') | KeyCode::Char('O') if key.modifiers == KeyModifiers::NONE => {
                 self.launch_minecraft();
