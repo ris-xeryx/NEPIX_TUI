@@ -28,13 +28,17 @@ nepix
 ```
 
 - `↑↓` o `jk` — Navegar versiones
-- `Enter` — Lanzar con Microsoft login (modo online)
-- `o` — Lanzar offline (sin auth)
+- `←→` — Cambiar loader
+- `Enter` — Lanzar (modo online u offline según configuración)
+- `O` — Lanzar offline (siempre)
 - `Ctrl+M` — Alternar online/offline
-- `q` — Salir
+- `Ctrl+V` — Mostrar/ocultar snapshots
+- `Ctrl+P` — Abrir configuración
+- `Tab` — Cambiar tema de color
+- `Q` — Salir
 
 > **Nota:** El modo online requiere aprobación de Mojang. Puede tardar semanas en activarse.
-> Mientras tanto, usa el modo offline con `o`.
+> Mientras tanto, usa el modo offline con `O`.
 
 ---
 

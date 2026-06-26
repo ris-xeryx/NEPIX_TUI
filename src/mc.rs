@@ -93,19 +93,9 @@ pub async fn authenticate_offline(username: &str) -> Result<UserProfile> {
     let mut auth = OfflineAuth::new(username);
     auth.authenticate(None::<&EventBus>).await.map_err(|e| anyhow::anyhow!("{e}"))
 }
-///
-/// Hace una petición HTTP GET a:
-/// `https://launchermeta.mojang.com/mc/game/version_manifest_v2.json`
-///
-/// La respuesta es un JSON con todas las versiones que han existido
-/// (desde la 1.0 hasta las más recientes).
-///
-/// # Errores
-/// - Si no hay internet, devuelve un error.
-/// - Si la API cambia su formato, puede fallar la deserialización.
-///
-/// El llamador (main.rs) maneja el error con `unwrap_or_default()`,
-/// devolviendo una lista vacía si algo falla.
+
+/// Obtiene todas las versiones de Minecraft desde la API de Mojang.
+/// El llamador usa `unwrap_or_default()` para manejar errores.
 pub async fn fetch_versions() -> Result<Vec<VersionEntry>> {
     let resp = reqwest::get("https://launchermeta.mojang.com/mc/game/version_manifest_v2.json")
         .await?
@@ -229,34 +219,8 @@ async fn resolve_neoforge(mc_version: &str) -> Option<String> {
         })
 }
 
-/// Función principal de lanzamiento.
-///
-/// # ¿Qué hace?
-///
-/// 1. **Autenticación**: crea una sesión offline con el nombre de usuario.
-/// 2. **Construcción**: arma un `VersionBuilder` con versión, loader y nombre.
-/// 3. **Eventos**: crea un `EventBus` para recibir eventos de progreso.
-/// 4. **Lanzamiento**: llama a `launch_builder.run()` que:
-///    - Descarga archivos si es necesario (librerías, assets, natives)
-///    - Busca/descarga Java (Temurin) automáticamente
-///    - Inicia el proceso de Minecraft
-///    - Espera a que el juego se cierre
-///
-/// # El canal de eventos
-///
-/// Mientras todo esto ocurre, un `tokio::spawn` escucha el `EventBus`
-/// y reenvía los eventos al canal `mpsc` que la TUI está vigilando.
-/// Así la interfaz se actualiza sola sin necesidad de "preguntar".
-///
-/// # Parámetros
-/// - `username`: nombre para la cuenta offline
-/// - `version`: versión de Minecraft (ej: "1.21.4")
-/// - `loader_name`: "Vanilla", "Fabric", etc.
-/// - `min_ram`: RAM mínima (ej: "2G")
-/// - `max_ram`: RAM máxima (ej: "4G")
-/// - `jvm_args`: argumentos JVM adicionales
-/// - `mods`: slugs de Modrinth a instalar
-/// - `tx`: canal para enviar eventos de vuelta a la TUI
+/// Lanza Minecraft: descarga, resuelve Java e inicia el proceso.
+/// Reenvía eventos del `EventBus` al canal `tx` para que la TUI muestre progreso.
 pub async fn launch(
     profile: &UserProfile,
     version: String,
@@ -294,11 +258,9 @@ pub async fn launch(
         &version,
     );
 
-    // EventBus: sistema de mensajería entre lighty-launcher y nosotros
     let bus = EventBus::new(1000);
     let mut rx = bus.subscribe();
 
-    // Hilo escucha-eventos: reenvía eventos del bus al canal de la TUI
     let tx_clone = tx.clone();
     tokio::spawn(async move {
         let mut downloaded: u64 = 0;
@@ -371,12 +333,8 @@ pub async fn launch(
         }
     });
 
-    // Aplicar mods si hay y el loader no es Vanilla
-    let is_not_vanilla = loader_name != "Vanilla";
-    if !mods.is_empty() && is_not_vanilla {
-        let _ = tx
-            .send(McEvent::Status(format!("Adding {} mod(s)...", mods.len())))
-            .await;
+    if !mods.is_empty() && loader_name != "Vanilla" {
+        let _ = tx.send(McEvent::Status(format!("Adding {} mod(s)...", mods.len()))).await;
         instance = instance
             .with_mod()
             .with_modrinth_mods(mods.iter().map(|m| (m.clone(), None::<String>)).collect())
@@ -404,18 +362,10 @@ pub async fn launch(
     }
     launch_builder = jvm.done();
 
-    // Asegura que el event listener (spawned arriba) se suscriba
-    // antes de que run() dispare eventos. Sin esto, versiones cacheadas
-    // donde run() retorna casi instantáneamente pierden todos los eventos.
     tokio::task::yield_now().await;
 
-    // run() bloquea esta tarea hasta que Minecraft se cierre
     match launch_builder.run().await {
-        Ok(()) => {
-            let _ = tx.send(McEvent::Done).await;
-        }
-        Err(e) => {
-            let _ = tx.send(McEvent::Error(format!("Launch failed: {e}"))).await;
-        }
+        Ok(()) => { let _ = tx.send(McEvent::Done).await; }
+        Err(e) => { let _ = tx.send(McEvent::Error(format!("Launch failed: {e}"))).await; }
     }
 }
