@@ -1,7 +1,8 @@
 /// Estado interno del launcher y lógica de entrada del teclado.
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use lighty_auth::UserProfile;
+use lighty_auth::{AuthProvider, UserProfile};
+use secrecy::ExposeSecret;
 use std::sync::Arc;
 use std::time::Instant;
 use tokio::sync::{mpsc, Mutex};
@@ -20,7 +21,7 @@ pub enum Screen {
 
 pub enum AuthEvent {
     DeviceCode { url: String, code: String },
-    Success,
+    Success { refresh_token: Option<String> },
     Error(String),
 }
 
@@ -224,6 +225,7 @@ impl App {
                 if key.modifiers == KeyModifiers::CONTROL =>
             {
                 self.config.online_mode = !self.config.online_mode;
+                let _ = self.config.save();
             }
             KeyCode::Enter => {
                 if self.config.online_mode {
@@ -236,7 +238,7 @@ impl App {
                 self.cycle_theme();
             }
             KeyCode::Char('o') | KeyCode::Char('O') if key.modifiers == KeyModifiers::NONE => {
-                self.launch_minecraft();
+                self.launch_minecraft_offline();
             }
             _ => {}
         }
@@ -269,8 +271,14 @@ impl App {
 
             match result {
                 Ok(profile) => {
+                    let rt = match &profile.provider {
+                        AuthProvider::Microsoft { refresh_token, .. } => {
+                            refresh_token.as_ref().map(|rt| rt.expose_secret().to_string())
+                        }
+                        _ => None,
+                    };
                     *profile_arc.lock().await = Some(profile);
-                    let _ = tx_success.send(AuthEvent::Success).await;
+                    let _ = tx_success.send(AuthEvent::Success { refresh_token: rt }).await;
                 }
                 Err(e) => {
                     let _ = tx_success.send(AuthEvent::Error(format!("{e}"))).await;
@@ -286,7 +294,11 @@ impl App {
                 self.auth_url = Some(url);
                 self.auth_status = "Login with Microsoft".into();
             }
-            AuthEvent::Success => {
+            AuthEvent::Success { refresh_token } => {
+                if let Some(rt) = refresh_token {
+                    self.config.msa_refresh_token = Some(rt);
+                    let _ = self.config.save();
+                }
                 self.auth_status = "Authenticated! Launching...".into();
                 self.launch_minecraft();
             }
@@ -335,14 +347,10 @@ impl App {
                 match guard.as_ref() {
                     Some(profile) => profile.clone(),
                     None => {
-                        drop(guard);
-                        match mc::authenticate_offline(&username).await {
-                            Ok(profile) => profile,
-                            Err(e) => {
-                                let _ = tx.send(McEvent::Error(format!("Auth failed: {e}"))).await;
-                                return;
-                            }
-                        }
+                        let _ = tx.send(McEvent::Error(
+                            "Online mode is on but no Microsoft session found. Press O for offline launch.".into()
+                        )).await;
+                        return;
                     }
                 }
             } else {
@@ -358,6 +366,44 @@ impl App {
         }));
 
         self.install_status = "Starting...".into();
+        self.install_progress = 0.0;
+        self.install_current = 0;
+        self.install_total = 0;
+        self.install_start = Some(Instant::now());
+        self.install_has_real_progress = false;
+        self.screen = Screen::Installing;
+    }
+
+    pub fn launch_minecraft_offline(&mut self) {
+        let version = self.current_version();
+        let loader = mc::loader_list()[self.loader_idx].to_string();
+        let min_ram = self.config.min_ram.clone();
+        let max_ram = self.config.max_ram.clone();
+        let jvm_args: Vec<String> = self
+            .config
+            .jvm_args
+            .split(',')
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(String::from)
+            .collect();
+        let username = self.config.username.clone();
+
+        let tx = self.mc_tx.clone();
+        let mods = self.config.mods.clone();
+
+        self.mc_task = Some(tokio::spawn(async move {
+            let p = match mc::authenticate_offline(&username).await {
+                Ok(profile) => profile,
+                Err(e) => {
+                    let _ = tx.send(McEvent::Error(format!("Auth failed: {e}"))).await;
+                    return;
+                }
+            };
+            mc::launch(&p, version, loader, min_ram, max_ram, &jvm_args, &mods, tx).await;
+        }));
+
+        self.install_status = "Starting... (offline)".into();
         self.install_progress = 0.0;
         self.install_current = 0;
         self.install_total = 0;

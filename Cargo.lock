@@ -1825,6 +1825,7 @@ dependencies = [
  "open",
  "ratatui",
  "reqwest 0.12.28",
+ "secrecy",
  "serde",
  "tokio",
  "toml",
